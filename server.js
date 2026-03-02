@@ -18,6 +18,7 @@ require('./models/Reservation.js');
 const auth = require("./routes/auth.js");
 const shops = require("./routes/shops.js");
 const reservations = require('./routes/reservations');
+const users = require('./routes/users');
 
 // Environment
 dotenv.config({
@@ -50,6 +51,7 @@ app.use([
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/shops", shops);
 app.use('/api/v1/reservations', reservations);
+app.use('/api/v1/users', users);
 
 // Start server 
 const PORT = process.env.PORT || 5001;
