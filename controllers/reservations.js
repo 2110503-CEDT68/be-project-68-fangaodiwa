@@ -1,4 +1,5 @@
 const Reservation = require('../models/Reservation');
+const Service = require('../models/Service'); // ✅ สิ่งสำคัญที่ 1: ต้องดึงโมเดล Service เข้ามาเพื่อเช็ค Tier
 
 // @desc    Get all reservations (View)
 // @route   GET /api/v1/reservations
@@ -33,13 +34,32 @@ exports.getReservations = async (req, res, next) => {
     }
 };
 
-// @desc    Add reservation (Create - cho mockup)
+// @desc    Add reservation (Create - cho mockup + Tier Check)
 // @route   POST /api/v1/reservations
 // @access  Private
 exports.addReservation = async (req, res, next) => {
     try {
         // 1. ระบุตัวผู้จอง โดยเอา ID มาจาก Token ที่ Login
         req.body.user = req.user.id;
+
+        // 🔥 สิ่งสำคัญที่ 2: เช็ค Tier ของ Service ก่อน
+        const service = await Service.findById(req.body.service);
+
+        if (!service) {
+            return res.status(404).json({
+                success: false,
+                message: `No service with id ${req.body.service}`
+            });
+        }
+
+        // ตรวจสอบสิทธิ์ Tier: ถ้าบริการเป็นระดับ vvip_poseidon แต่ผู้จองไม่ได้เป็นระดับเดียวกัน (และไม่ใช่ Admin) ให้ปฏิเสธการจอง
+        if (service.tier === 'vvip_poseidon' && req.user.tier !== 'vvip_poseidon' && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: `User tier '${req.user.tier}' is not authorized to book a '${service.tier}' service`
+            });
+        }
+        // 🔥 จบส่วนเช็ค Tier
 
         // 2. เช็คเงื่อนไข Requirement: ผู้ใช้จองได้สูงสุด 3 คิว (ยกเว้น admin)
         const existedReservations = await Reservation.find({ user: req.user.id });
