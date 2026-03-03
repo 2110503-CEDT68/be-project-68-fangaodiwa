@@ -18,6 +18,7 @@ require('./models/Reservation.js');
 const auth = require("./routes/auth.js");
 const shops = require("./routes/shops.js");
 const services = require('./routes/services');
+const users = require('./routes/users');
 const reservations = require('./routes/reservations');
 
 // Environment
@@ -51,6 +52,7 @@ app.use([
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/shops", shops);
 app.use('/api/v1/services', services);
+app.use('/api/v1/users', users);
 app.use('/api/v1/reservations', reservations);
 
 // Start server 
