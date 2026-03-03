@@ -1,4 +1,5 @@
 const Reservation = require('../models/Reservation');
+const Service = require('../models/Service');
 
 // @desc    Get all reservations (View)
 // @route   GET /api/v1/reservations
@@ -64,7 +65,20 @@ exports.addReservation = async (req, res, next) => {
       });
     }
 
-    // 3. สร้างข้อมูลลง Database
+    // 3. เช็คเงื่อนไข Tier: service tier vvip_poseidon จองได้ เฉพาะ user tier vvip_poseidon
+    const service = await Service.findById(req.body.service);
+    if (!service) {
+      return res.status(404).json({ success: false, message: `No service with id ${req.body.service}` });
+    }
+
+    if (service.tier === 'vvip_poseidon' && req.user.tier !== 'vvip_poseidon') {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have the required tier to book this service'
+      });
+    }
+
+    // 4. สร้างข้อมูลลง Database
     const reservation = await Reservation.create(req.body);
 
     res.status(201).json({
