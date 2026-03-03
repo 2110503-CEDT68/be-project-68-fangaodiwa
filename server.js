@@ -1,5 +1,5 @@
-// Package
 const express = require("express");
+const app = express();
 const dotenv = require("dotenv");
 const cookieParser = require('cookie-parser');
 const connectDB = require("./config/db.js");
@@ -8,36 +8,46 @@ const helmet = require('helmet');
 const { xss } = require('express-xss-sanitizer');
 const rateLimit = require('express-rate-limit');
 
-// Create Collection Models
-require('./models/User.js');
-require('./models/Shop.js');
-require('./models/Service.js');
-require('./models/Reservation.js');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUI = require('swagger-ui-express');
 
-// Routes
+// routes
+const hospitals = require("./routes/hospitals.js");
 const auth = require("./routes/auth.js");
-const shops = require("./routes/shops.js");
-const reservations = require('./routes/reservations');
-const users = require('./routes/users');
+const appointments = require("./routes/appointments.js");
 
-// Environment
 dotenv.config({
     path: "./config/config.env"
-});
+})
 
-const limiter = rateLimit({
-    windowMs: 10 * 60 * 1000,
-    max: 100
-});
-
-const app = express();
-
-// Connect Database
 connectDB();
 
 app.set('query parser', 'extended');
 
-// Middlewares
+const limiter = rateLimit({
+    windowsMs: 10 * 60 * 1000,
+    max: 100
+});
+
+const swaggerOptions = {
+    swaggerDefinition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Library API',
+            version: '1.0.0',
+            description: 'A simple Express VacQ API'
+        },
+        servers: [
+            {
+                url: `http://localhost:${process.env.PORT}/api/v1`
+            }
+        ]
+    },
+    apis: ['./routes/*.js']
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
 app.use([
     express.json(),
     cookieParser(),
@@ -47,19 +57,18 @@ app.use([
     limiter
 ]);
 
-// apis
+app.use("/api/v1/hospitals", hospitals);
 app.use("/api/v1/auth", auth);
-app.use("/api/v1/shops", shops);
-app.use('/api/v1/reservations', reservations);
-app.use('/api/v1/users', users);
+app.use("/api/v1/appointments", appointments);
+app.use('/api-docs', swaggerUI.serve, swaggerUI.setup(swaggerDocs));
 
-// Start server 
 const PORT = process.env.PORT || 5001;
 const NODE_ENV = process.env.NODE_ENV;
 
-const server = app.listen(PORT, console.log(`Server running in ${NODE_ENV} mode on port ${PORT}`));
+const server = app.listen(PORT, console.log(`Server running in ${NODE_ENV} mode on port ${PORT}`))
 
 process.on("unhandledRejection", (err, promise) => {
     console.log(`Error: ${err.message}`);
+
     server.close(() => process.exit(1));
-});
+})

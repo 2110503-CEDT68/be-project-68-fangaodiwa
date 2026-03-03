@@ -1,0 +1,152 @@
+@startuml class-diagram
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam linetype ortho
+
+' ── Stereotypes (UML Profile) ──────────────────────────────────────
+' <<Entity>>  = Mongoose model / persistent data
+' <<Service>> = Business logic layer (controller)
+' <<Boundary>> = Express route (client-facing interface)
+
+' ── Entities ───────────────────────────────────────────────────────
+
+class User <<Entity>> {
+    + _id : ObjectId
+    + name : String
+    + email : String
+    + phone : String
+    - password : String
+    + role : String <<enum: user|admin>>
+    + tier : String <<enum: vip|vvip_poseidon>>
+    + createdAt : Date
+    --
+    + matchPassword(enteredPassword) : Boolean
+}
+
+class Shop <<Entity>> {
+    + _id : ObjectId
+    + name : String
+    + address : String
+    + phone : String
+    + open_time : String <<HH:mm>>
+    + close_time : String <<HH:mm>>
+    + createdAt : Date
+    --
+    + services : Service[] <<virtual>>
+}
+
+class Service <<Entity>> {
+    + _id : ObjectId
+    + shop : ObjectId <<ref: Shop>>
+    + name : String
+    + price : Number
+    + duration : Number
+    + description : String
+    + tier : String <<enum: vip|vvip_poseidon>>
+    + createdAt : Date
+}
+
+class Reservation <<Entity>> {
+    + _id : ObjectId
+    + user : ObjectId <<ref: User>>
+    + service : ObjectId <<ref: Service>>
+    + appointment_date : String <<YYYY-MM-DD>>
+    + appointment_time : String <<HH:mm>>
+    + status : String <<enum: reserve|in_progress|completed>>
+    + createdAt : Date
+}
+
+' ── Boundaries (Routes) ────────────────────────────────────────────
+
+class AuthRoute <<Boundary>> {
+    POST /auth/register
+    POST /auth/login
+    GET  /auth/logout
+}
+
+class ShopRoute <<Boundary>> {
+    GET    /shops
+    GET    /shops/:id
+    POST   /shops
+    PUT    /shops/:id
+    DELETE /shops/:id
+}
+
+class ServiceRoute <<Boundary>> {
+    GET    /services
+    GET    /services/:id
+    POST   /services
+    PUT    /services/:id
+    DELETE /services/:id
+}
+
+class ReservationRoute <<Boundary>> {
+    GET    /reservations
+    POST   /reservations
+    PUT    /reservations/:id
+    DELETE /reservations/:id
+}
+
+class UserRoute <<Boundary>> {
+    PUT /users/:id/tier
+}
+
+' ── Services (Controllers) ─────────────────────────────────────────
+
+class AuthController <<Service>> {
+    + register(req, res)
+    + login(req, res)
+    + logout(req, res)
+}
+
+class ShopController <<Service>> {
+    + getShops(req, res)
+    + getShop(req, res)
+    + createShop(req, res)
+    + updateShop(req, res)
+    + deleteShop(req, res)
+}
+
+class ServiceController <<Service>> {
+    + getServices(req, res)
+    + getService(req, res)
+    + createService(req, res)
+    + updateService(req, res)
+    + deleteService(req, res)
+}
+
+class ReservationController <<Service>> {
+    + getReservations(req, res)
+    + addReservation(req, res)
+    + updateReservation(req, res)
+    + deleteReservation(req, res)
+}
+
+class UserController <<Service>> {
+    + updateUserTier(req, res)
+}
+
+' ── Relationships ──────────────────────────────────────────────────
+
+Shop "1" o-- "0..*" Service : has
+Service "1" <-- "0..*" Reservation : booked via
+User "1" <-- "0..*" Reservation : made by
+
+AuthRoute ..> AuthController : delegates
+ShopRoute ..> ShopController : delegates
+ServiceRoute ..> ServiceController : delegates
+ReservationRoute ..> ReservationController : delegates
+UserRoute ..> UserController : delegates
+
+AuthController ..> User : creates / authenticates
+ShopController ..> Shop : CRUD
+ShopController ..> Service : cascade delete
+ShopController ..> Reservation : cascade delete
+ServiceController ..> Service : CRUD
+ServiceController ..> Shop : validates
+ReservationController ..> Reservation : CRUD
+ReservationController ..> Service : tier check
+UserController ..> User : updates tier
+
+@enduml
