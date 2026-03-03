@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Service = require('../models/Service');
 const Shop = require('../models/Shop');
 
@@ -36,6 +37,10 @@ exports.getServices = async (req, res) => {
 // @access  Private
 exports.getService = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: `Invalid id format: ${req.params.id}` });
+    }
+
     const service = await Service.findById(req.params.id).populate({
       path: 'shop',
       select: 'name address phone open_time close_time'
@@ -82,6 +87,10 @@ exports.createService = async (req, res) => {
 // @access  Private
 exports.updateService = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: `Invalid id format: ${req.params.id}` });
+    }
+
     const service = await Service.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
@@ -103,6 +112,10 @@ exports.updateService = async (req, res) => {
 // @access  Private
 exports.deleteService = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ success: false, message: `Invalid id format: ${req.params.id}` });
+    }
+
     const service = await Service.findById(req.params.id);
 
     if (!service) {
